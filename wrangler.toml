@@ -1,0 +1,7 @@
+name = "broken-linear"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-06-30"
+
+[vars]
+LINEAR_OAUTH_SCOPES = "read,write,issues:create,comments:create"
+LINEAR_BUG_LABELS = "Bug"
