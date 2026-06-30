@@ -7,7 +7,7 @@ A Linear issue browser that requires Linear OAuth and lists bug-labeled issues f
 - Vite + React 19, TypeScript, Tailwind v4, shadcn/ui
 - Zustand for UI/navigation state
 - TanStack Query for server state
-- Shared Linear API handler with adapters for Vercel Functions, Cloudflare Pages Functions, and Netlify Functions
+- Shared Linear API handler with adapters for Vercel Functions and Cloudflare Pages Functions
 - `emulate` Linear service for local OAuth and GraphQL validation
 
 ## Features
@@ -73,7 +73,7 @@ Pushes to `main` run `.github/workflows/cloudflare-release.yml`. The workflow bu
 |---|---|
 | `npm run emulate:linear` | Start the local Linear emulator on `:4012` |
 | `npm run dev:vercel` | Start Vercel local dev on `:3000` |
-| `npm start` | Netlify dev compatibility path |
+| `npm start` | Alias for `npm run dev:vercel` |
 | `npm run dev` | Vite only |
 | `npm run build` | typecheck + production build |
 | `npm run lint` | ESLint |
@@ -86,7 +86,6 @@ Pushes to `main` run `.github/workflows/cloudflare-release.yml`. The workflow bu
 server/linear-api.ts              # shared Linear OAuth + GraphQL API handler
 api/[...path].ts                  # Vercel Function adapter
 functions/api/[[path]].ts         # Cloudflare Pages Function adapter
-netlify/functions/api.mts         # Netlify Function compatibility adapter
 scripts/start-linear-emulator.ts  # local Linear emulator seed
 src/store/ui-store.ts             # Zustand navigation store
 src/queries/issues.ts             # TanStack Query hooks

@@ -23,7 +23,6 @@
   "include": [
     "api/**/*.ts",
     "functions/**/*.ts",
-    "netlify/functions/**/*.mts",
     "scripts/**/*.ts",
     "server/**/*.ts",
     "vite.config.ts"
