@@ -157,8 +157,9 @@ function DetailBody({ issue }: { issue: Issue }) {
                     key={id}
                     className="rounded px-1.5 py-0.5 text-xs"
                     style={{
-                      color: label.color,
-                      backgroundColor: `${label.color}22`,
+                      color: "#f1f1f1",
+                      backgroundColor: `${label.color}44`,
+                      border: `1px solid ${label.color}`,
                     }}
                   >
                     {label.name}
