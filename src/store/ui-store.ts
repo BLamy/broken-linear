@@ -17,10 +17,15 @@ interface UIState {
 }
 
 function viewFromPathname(pathname: string): ViewId {
+  const teamMatch = pathname.match(/^\/teams\/([^/]+)$/)
+  if (teamMatch) return `team:${decodeURIComponent(teamMatch[1])}`
   return pathname === "/my-issues" ? "my-issues" : "active"
 }
 
 function pathnameForView(view: ViewId): string | null {
+  if (view.startsWith("team:")) {
+    return `/teams/${encodeURIComponent(view.slice("team:".length))}`
+  }
   if (view === "my-issues") return "/my-issues"
   if (view === "active") return "/"
   return null
