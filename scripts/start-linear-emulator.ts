@@ -1,7 +1,22 @@
-import { createEmulator } from "emulate"
+type EmulatorApi = {
+  createEmulator: (options: {
+    service: "linear"
+    port: number
+    seed: Record<string, unknown>
+  }) => Promise<{ url: string }>
+}
+
+const submoduleApiUrl = new URL(
+  "../emulate/packages/emulate/dist/api.js",
+  import.meta.url
+).href
+const { createEmulator } = (await import(submoduleApiUrl)) as EmulatorApi
 
 const port = Number(process.env.LINEAR_EMULATOR_PORT ?? 4012)
-const appUrl = (process.env.PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "")
+const appUrl = (process.env.PUBLIC_APP_URL ?? "http://localhost:3000").replace(
+  /\/$/,
+  ""
+)
 
 const emulator = await createEmulator({
   service: "linear",
@@ -45,7 +60,8 @@ const emulator = await createEmulator({
         {
           team: "ENG",
           title: "Add workspace import flow",
-          description: "A feature issue that should be filtered out by the bug view.",
+          description:
+            "A feature issue that should be filtered out by the bug view.",
           state: "Backlog",
           assignee: "admin@example.com",
           labels: ["Feature"],
@@ -68,7 +84,13 @@ const emulator = await createEmulator({
         {
           token: "lin_test_admin",
           user: "admin@example.com",
-          scopes: ["read", "write", "issues:create", "comments:create", "admin"],
+          scopes: [
+            "read",
+            "write",
+            "issues:create",
+            "comments:create",
+            "admin",
+          ],
         },
       ],
       strict_scopes: false,

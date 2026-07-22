@@ -18,7 +18,7 @@ export function LoginView() {
         </div>
 
         <a href="/api/auth/login">
-          <Button className="h-9 w-full justify-between bg-[#5e6ad2] hover:bg-[#4f5bc4]">
+          <Button className="h-9 w-full justify-between bg-[#5965c9] hover:bg-[#4f5bc4]">
             <span className="flex items-center gap-2">
               <LockKeyhole className="size-4" />
               Continue with Linear

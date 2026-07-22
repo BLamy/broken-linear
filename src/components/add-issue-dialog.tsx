@@ -1,10 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -14,7 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useUIStore } from "@/store/ui-store"
-import { useCreateIssue, useProjects, useTeams } from "@/queries/issues"
+import {
+  useCreateIssue,
+  useLabels,
+  useProjects,
+  useTeams,
+} from "@/queries/issues"
 import { PRIORITY_META, type Priority } from "@/lib/types"
 
 export function AddIssueDialog() {
@@ -23,14 +24,15 @@ export function AddIssueDialog() {
   const view = useUIStore((s) => s.view)
   const { data: teams = [] } = useTeams()
   const { data: projects = [] } = useProjects()
+  const { data: labels = [] } = useLabels()
   const create = useCreateIssue()
 
   const fallbackTeamId = teams[0]?.id ?? ""
   const defaultTeamId = view.startsWith("team:")
     ? view.slice("team:".length)
     : view.startsWith("project:")
-      ? projects.find((p) => p.id === view.slice("project:".length))?.teamId ??
-        fallbackTeamId
+      ? (projects.find((p) => p.id === view.slice("project:".length))?.teamId ??
+        fallbackTeamId)
       : fallbackTeamId
 
   const defaultProjectId = view.startsWith("project:")
@@ -43,6 +45,9 @@ export function AddIssueDialog() {
   const [teamId, setTeamId] = useState("")
   const [projectId, setProjectId] = useState(defaultProjectId)
   const activeTeamId = teamId || defaultTeamId
+  const bugLabelId = labels.find(
+    (label) => label.name.toLowerCase() === "bug"
+  )?.id
 
   const teamProjects = projects.filter((p) => p.teamId === activeTeamId)
 
@@ -63,7 +68,7 @@ export function AddIssueDialog() {
         priority,
         teamId: activeTeamId,
         projectId: projectId || null,
-        labelIds: [],
+        labelIds: bugLabelId ? [bugLabelId] : [],
       },
       {
         onSuccess: () => {
@@ -119,7 +124,10 @@ export function AddIssueDialog() {
               </SelectContent>
             </Select>
 
-            <Select value={projectId || "none"} onValueChange={(v) => setProjectId(v === "none" ? "" : v)}>
+            <Select
+              value={projectId || "none"}
+              onValueChange={(v) => setProjectId(v === "none" ? "" : v)}
+            >
               <SelectTrigger size="sm" className="h-7 text-xs">
                 <SelectValue placeholder="Project" />
               </SelectTrigger>

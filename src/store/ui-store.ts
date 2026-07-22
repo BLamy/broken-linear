@@ -13,6 +13,22 @@ interface UIState {
   setAddIssueOpen: (open: boolean) => void
   toggleSidebar: () => void
   setSearchQuery: (q: string) => void
+  syncViewFromLocation: () => void
+}
+
+function viewFromPathname(pathname: string): ViewId {
+  const teamMatch = pathname.match(/^\/teams\/([^/]+)$/)
+  if (teamMatch) return `team:${decodeURIComponent(teamMatch[1])}`
+  return pathname === "/my-issues" ? "my-issues" : "active"
+}
+
+function pathnameForView(view: ViewId): string | null {
+  if (view.startsWith("team:")) {
+    return `/teams/${encodeURIComponent(view.slice("team:".length))}`
+  }
+  if (view === "my-issues") return "/my-issues"
+  if (view === "active") return "/"
+  return null
 }
 
 function readCollapsed(): boolean {
@@ -24,13 +40,22 @@ function readCollapsed(): boolean {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  view: "active",
+  view:
+    typeof window === "undefined"
+      ? "active"
+      : viewFromPathname(window.location.pathname),
   selectedIssueId: null,
   addIssueOpen: false,
   sidebarCollapsed: readCollapsed(),
   searchQuery: "",
 
-  setView: (view) => set({ view, selectedIssueId: null }),
+  setView: (view) => {
+    const pathname = pathnameForView(view)
+    if (pathname && window.location.pathname !== pathname) {
+      window.history.pushState(null, "", pathname)
+    }
+    set({ view, selectedIssueId: null })
+  },
   selectIssue: (id) => set({ selectedIssueId: id }),
   setAddIssueOpen: (open) => set({ addIssueOpen: open }),
 
@@ -42,4 +67,9 @@ export const useUIStore = create<UIState>((set) => ({
     }),
 
   setSearchQuery: (q) => set({ searchQuery: q }),
+  syncViewFromLocation: () =>
+    set({
+      view: viewFromPathname(window.location.pathname),
+      selectedIssueId: null,
+    }),
 }))
