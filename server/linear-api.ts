@@ -1,4 +1,12 @@
-import type { Issue, IssueStatus, Label, Priority, Project, Team, User } from "../src/lib/types"
+import type {
+  Issue,
+  IssueStatus,
+  Label,
+  Priority,
+  Project,
+  Team,
+  User,
+} from "../src/lib/types"
 
 type Env = Record<string, string | undefined>
 
@@ -93,7 +101,10 @@ const DEFAULT_EMULATOR_CLIENT_SECRET = "example_client_secret"
 
 const textEncoder = new TextEncoder()
 
-export async function handleLinearRequest(request: Request, env: Env = {}): Promise<Response> {
+export async function handleLinearRequest(
+  request: Request,
+  env: Env = {}
+): Promise<Response> {
   const url = new URL(request.url)
   const path = url.pathname.replace(/^\/api/, "") || "/"
 
@@ -158,7 +169,9 @@ export async function handleLinearRequest(request: Request, env: Env = {}): Prom
     }
 
     if (path === "/issues" && request.method === "POST") {
-      const input = (await request.json()) as Partial<Issue> & { teamId: string }
+      const input = (await request.json()) as Partial<Issue> & {
+        teamId: string
+      }
       const issue = await createLinearIssue(session, env, input)
       return json(issue, 201)
     }
@@ -197,7 +210,9 @@ export async function handleLinearRequest(request: Request, env: Env = {}): Prom
     }
     console.error(error)
     return json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       500
     )
   }
@@ -231,7 +246,8 @@ function requestOrigin(request: Request): string {
 function getConfig(request: Request, env: Env): LinearConfig {
   const emulatorUrl = envValue(env, "LINEAR_EMULATOR_URL")?.replace(/\/$/, "")
   const baseUrl =
-    envValue(env, "PUBLIC_APP_URL")?.replace(/\/$/, "") ?? requestOrigin(request)
+    envValue(env, "PUBLIC_APP_URL")?.replace(/\/$/, "") ??
+    requestOrigin(request)
   const redirectUri =
     envValue(env, "LINEAR_REDIRECT_URI") ?? `${baseUrl}/api/auth/callback`
   const emulator = Boolean(emulatorUrl)
@@ -252,7 +268,8 @@ function getConfig(request: Request, env: Env): LinearConfig {
   if (!clientSecret) {
     throw new ApiError("LINEAR_CLIENT_SECRET is not configured", 500)
   }
-  if (!sessionSecret) throw new ApiError("SESSION_SECRET is not configured", 500)
+  if (!sessionSecret)
+    throw new ApiError("SESSION_SECRET is not configured", 500)
 
   return {
     authUrl:
@@ -262,7 +279,9 @@ function getConfig(request: Request, env: Env): LinearConfig {
         : "https://linear.app/oauth/authorize"),
     tokenUrl:
       envValue(env, "LINEAR_TOKEN_URL") ??
-      (emulator ? `${emulatorUrl}/oauth/token` : "https://api.linear.app/oauth/token"),
+      (emulator
+        ? `${emulatorUrl}/oauth/token`
+        : "https://api.linear.app/oauth/token"),
     graphqlUrl:
       envValue(env, "LINEAR_GRAPHQL_URL") ??
       (emulator ? `${emulatorUrl}/graphql` : "https://api.linear.app/graphql"),
@@ -294,7 +313,9 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url)
   const code = url.searchParams.get("code")
   const state = url.searchParams.get("state")
-  const expectedState = parseCookies(request.headers.get("cookie"))[STATE_COOKIE]
+  const expectedState = parseCookies(request.headers.get("cookie"))[
+    STATE_COOKIE
+  ]
 
   if (!code) throw new ApiError("Linear did not return an OAuth code", 400)
   if (!state || !expectedState || state !== expectedState) {
@@ -328,10 +349,16 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   }
 
   if (!token.access_token) {
-    throw new ApiError("Linear token exchange did not return an access token", 502)
+    throw new ApiError(
+      "Linear token exchange did not return an access token",
+      502
+    )
   }
 
-  const profile = await fetchLinearProfile(token.access_token, config.graphqlUrl)
+  const profile = await fetchLinearProfile(
+    token.access_token,
+    config.graphqlUrl
+  )
   const session: Session = {
     accessToken: token.access_token,
     refreshToken: token.refresh_token,
@@ -353,7 +380,10 @@ async function handleCallback(request: Request, env: Env): Promise<Response> {
   ])
 }
 
-async function readSession(request: Request, env: Env): Promise<Session | null> {
+async function readSession(
+  request: Request,
+  env: Env
+): Promise<Session | null> {
   const raw = parseCookies(request.headers.get("cookie"))[SESSION_COOKIE]
   if (!raw) return null
   const config = getConfig(request, env)
@@ -552,7 +582,10 @@ async function fetchLinearData(
   for (const project of data.projects.nodes) {
     projectMap.set(
       project.id,
-      mapProject(project, project.team?.id ?? data.teams.nodes[0]?.id ?? "linear")
+      mapProject(
+        project,
+        project.team?.id ?? data.teams.nodes[0]?.id ?? "linear"
+      )
     )
   }
 
@@ -563,7 +596,9 @@ async function fetchLinearData(
     users: data.users.nodes.map(mapUser),
     issues: data.issues.nodes
       .filter((issue) =>
-        issue.labels.nodes.some((label) => bugNames.has(label.name.toLowerCase()))
+        issue.labels.nodes.some((label) =>
+          bugNames.has(label.name.toLowerCase())
+        )
       )
       .map(mapIssue),
     statesByTeam,
@@ -620,8 +655,9 @@ async function updateLinearIssue(
   patch: Partial<Issue>
 ): Promise<Issue> {
   const config = getConfig(new Request("http://local.invalid/api/session"), env)
-  const existing = await getLinearIssue(session, env, id)
   const data = await fetchLinearData(session, env)
+  const existing = data.issues.find((issue) => issue.id === id)
+  if (!existing) throw new ApiError("Issue not found", 404)
   const input: Record<string, unknown> = {}
   if ("title" in patch) input.title = patch.title
   if ("description" in patch) input.description = patch.description
@@ -630,7 +666,10 @@ async function updateLinearIssue(
   if ("projectId" in patch) input.projectId = patch.projectId
   if ("labelIds" in patch) input.labelIds = patch.labelIds
   if ("status" in patch && patch.status) {
-    input.stateId = stateIdForStatus(data.statesByTeam.get(existing.teamId), patch.status)
+    input.stateId = stateIdForStatus(
+      data.statesByTeam.get(existing.teamId),
+      patch.status
+    )
   }
 
   const result = await linearGraphql<{
@@ -799,7 +838,10 @@ function stateIdForStatus(
     )
     if (reviewState) return reviewState.id
   }
-  return states.find((state) => state.type === preferredType[status])?.id ?? states[0]?.id
+  return (
+    states.find((state) => state.type === preferredType[status])?.id ??
+    states[0]?.id
+  )
 }
 
 function normalizePriority(priority: number): Priority {
