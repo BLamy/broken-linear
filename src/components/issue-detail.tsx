@@ -135,7 +135,7 @@ function DetailBody({ issue }: { issue: Issue }) {
           }
         >
           <SelectTrigger size="sm" className="h-7 w-40">
-            <SelectValue />
+            <SelectValue>{assignee?.name ?? "Unassigned"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Unassigned</SelectItem>
