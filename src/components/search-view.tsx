@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Search } from "lucide-react"
 import { api } from "@/lib/api"
@@ -8,10 +9,17 @@ export function SearchView() {
   const searchQuery = useUIStore((s) => s.searchQuery)
   const setSearchQuery = useUIStore((s) => s.setSearchQuery)
   const query = searchQuery.trim()
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 300)
+    return () => window.clearTimeout(timeout)
+  }, [query])
+
   const { data, isFetching } = useQuery({
-    queryKey: ["search", query],
-    queryFn: () => api.search(query),
-    enabled: Boolean(query),
+    queryKey: ["search", debouncedQuery],
+    queryFn: () => api.search(debouncedQuery),
+    enabled: Boolean(debouncedQuery),
   })
 
   const results = data?.results ?? []
