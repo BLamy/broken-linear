@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:vercel": "vercel dev --listen 3000",
-    "emulate:linear": "tsx scripts/start-linear-emulator.ts",
+    "emulate:build": "cd emulate && pnpm install --frozen-lockfile && pnpm --filter emulate... build",
+    "emulate:linear": "npm run emulate:build && tsx scripts/start-linear-emulator.ts",
     "start": "npm run dev:vercel",
     "build": "tsc -b && vite build",
     "deploy:cloudflare": "wrangler pages deploy dist --project-name broken-linear",
@@ -43,7 +44,6 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6",
     "@vercel/node": "^5.4.0",
-    "emulate": "^0.8.0",
     "eslint": "^10",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

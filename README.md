@@ -25,9 +25,14 @@ A Linear issue browser that requires Linear OAuth and lists bug-labeled issues f
 Run the Linear emulator in one terminal:
 
 ```bash
+git submodule update --init
 npm install
 npm run emulate:linear
 ```
+
+The emulator is pinned as the `emulate/` submodule. `npm run emulate:linear`
+installs its locked workspace dependencies, builds the local `emulate` package,
+and starts that exact revision.
 
 Run the Vercel local dev server in another terminal:
 
