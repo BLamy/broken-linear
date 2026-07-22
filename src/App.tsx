@@ -4,9 +4,16 @@ import { AddIssueDialog } from "@/components/add-issue-dialog"
 import { IssueDetailDialog } from "@/components/issue-detail"
 import { LoginView } from "@/components/login-view"
 import { useSession } from "@/queries/issues"
+import { useUIStore } from "@/store/ui-store"
 
 export function App() {
+  const syncViewFromLocation = useUIStore((s) => s.syncViewFromLocation)
   const { data: session, isLoading } = useSession()
+
+  useEffect(() => {
+    window.addEventListener("popstate", syncViewFromLocation)
+    return () => window.removeEventListener("popstate", syncViewFromLocation)
+  }, [syncViewFromLocation])
 
   if (isLoading) {
     return (
@@ -33,3 +40,4 @@ export function App() {
 }
 
 export default App
+import { useEffect } from "react"
