@@ -31,6 +31,7 @@ export function SearchView() {
           <Search className="size-4 text-muted-foreground" />
           <input
             autoFocus
+            aria-label="Search issues"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search issues by title or ID…"
