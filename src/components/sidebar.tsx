@@ -2,6 +2,7 @@ import {
   CircleDot,
   Inbox,
   LayoutGrid,
+  LogOut,
   PanelLeft,
   Plus,
   Search,
@@ -64,21 +65,35 @@ export function Sidebar() {
   const { data: session } = useSession()
   const inboxCount = countInbox(allIssues)
   const myCount = countMyIssues(allIssues, session?.user?.id)
+  const logOut = () => {
+    void api.logout().finally(() => window.location.assign("/"))
+  }
 
   if (sidebarCollapsed) {
     return (
       <aside className="flex h-full w-12 flex-col items-center gap-3 border-r border-white/6 bg-[#161618] py-4">
         <button
           onClick={toggleSidebar}
+          aria-label="Expand sidebar"
           className="text-muted-foreground hover:text-foreground"
         >
           <PanelLeft className="size-4" />
         </button>
         <button
           onClick={() => setAddIssueOpen(true)}
-          className="rounded-md bg-[#5e6ad2] p-1.5 text-white hover:bg-[#4f5bc4]"
+          aria-label="New issue"
+          className="rounded-md bg-[#5c68cf] p-1.5 text-white hover:bg-[#4f5bc4]"
         >
           <Plus className="size-4" />
+        </button>
+        <button
+          onClick={logOut}
+          aria-label="Log out"
+          title="Log out"
+          className="mt-auto rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+          <span className="sr-only">Log out</span>
         </button>
       </aside>
     )
@@ -90,7 +105,7 @@ export function Sidebar() {
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-white/6 bg-[#161618]">
       <div className="flex items-center justify-between px-3 py-3">
         <button className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-white/5">
-          <div className="flex size-6 items-center justify-center rounded-md bg-[#5e6ad2] text-[11px] font-bold text-white">
+          <div className="flex size-6 items-center justify-center rounded-md bg-[#5c68cf] text-[11px] font-bold text-white">
             L
           </div>
           <span className="text-sm font-medium">Linear</span>
@@ -113,9 +128,7 @@ export function Sidebar() {
           </p>
           <button
             className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              api.logout().finally(() => window.location.assign("/"))
-            }}
+            onClick={logOut}
           >
             Log out
           </button>

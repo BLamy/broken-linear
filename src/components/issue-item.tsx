@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils"
-import {
-  PRIORITY_META,
-  STATUS_META,
-  type Issue,
-} from "@/lib/types"
+import { toast } from "sonner"
+import { PRIORITY_META, STATUS_META, type Issue } from "@/lib/types"
 import { useUpdateIssue, useUsers } from "@/queries/issues"
 import { useUIStore } from "@/store/ui-store"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -23,7 +20,10 @@ function PriorityBars({ priority }: { priority: Issue["priority"] }) {
   if (priority === 0) return <span className="w-4" />
   const color = PRIORITY_META[priority].color
   return (
-    <div className="flex w-4 flex-col gap-px" title={PRIORITY_META[priority].label}>
+    <div
+      className="flex w-4 flex-col gap-px"
+      title={PRIORITY_META[priority].label}
+    >
       {[4, 3, 2, 1].map((level) => (
         <span
           key={level}
@@ -54,12 +54,25 @@ export function IssueItem({ issue }: { issue: Issue }) {
     ]
     const idx = order.indexOf(issue.status)
     const next = order[(idx + 1) % order.length]
-    update.mutate({ id: issue.id, patch: { status: next } })
+    update.mutate(
+      { id: issue.id, patch: { status: next } },
+      {
+        onError: (error) =>
+          toast.error(
+            error instanceof Error ? error.message : "Could not update status"
+          ),
+      }
+    )
   }
 
   return (
     <div className="group flex items-center gap-3 border-b border-white/6 px-2 py-2 hover:bg-white/3">
-      <button onClick={cycleStatus} className="shrink-0">
+      <button
+        onClick={cycleStatus}
+        className="shrink-0 disabled:cursor-wait disabled:opacity-50"
+        disabled={update.isPending}
+        aria-label={`Change status from ${status.label}`}
+      >
         <StatusIcon status={issue.status} />
       </button>
 

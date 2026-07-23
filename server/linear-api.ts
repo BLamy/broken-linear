@@ -118,7 +118,7 @@ export async function handleLinearRequest(
     }
 
     if (path === "/auth/logout" && request.method === "POST") {
-      return redirect("/", [clearCookie(SESSION_COOKIE)])
+      return json({ ok: true }, 200, [clearCookie(SESSION_COOKIE)])
     }
 
     if (path === "/session" && request.method === "GET") {
@@ -949,9 +949,11 @@ function redirect(location: string, cookies: string[] = []): Response {
   return new Response(null, { status: 302, headers })
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, cookies: string[] = []): Response {
+  const headers = new Headers({ "content-type": "application/json" })
+  for (const value of cookies) headers.append("set-cookie", value)
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json" },
+    headers,
   })
 }

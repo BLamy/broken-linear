@@ -16,7 +16,7 @@ export function SearchView() {
     return () => window.clearTimeout(timeout)
   }, [query])
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: ["search", debouncedQuery],
     queryFn: () => api.search(debouncedQuery),
     enabled: Boolean(debouncedQuery),
@@ -44,6 +44,18 @@ export function SearchView() {
           <p className="py-10 text-center text-sm text-muted-foreground">
             Search for issues by title or identifier.
           </p>
+        ) : isError ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <p className="text-sm text-[#eb5757]">
+              {error instanceof Error ? error.message : "Search failed."}
+            </p>
+            <button
+              className="text-xs text-[#8f98ff] hover:text-[#b6bcff]"
+              onClick={() => refetch()}
+            >
+              Try again
+            </button>
+          </div>
         ) : isFetching && results.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Searching…

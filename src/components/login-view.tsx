@@ -6,7 +6,7 @@ export function LoginView() {
     <main className="flex h-svh w-full items-center justify-center bg-[#0d0d0d] px-6 text-foreground">
       <section className="w-full max-w-sm">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-md bg-[#5e6ad2] text-white">
+          <div className="flex size-9 items-center justify-center rounded-md bg-[#5c68cf] text-white">
             <Bug className="size-5" />
           </div>
           <div>

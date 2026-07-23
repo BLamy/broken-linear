@@ -32,7 +32,7 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   getSession: () => http<Session>("/session"),
-  logout: () => http<never>("/auth/logout", { method: "POST" }),
+  logout: () => http<{ ok: boolean }>("/auth/logout", { method: "POST" }),
   getTeams: () => http<Team[]>("/teams"),
   getProjects: (teamId?: string) =>
     http<Project[]>(`/projects${teamId ? `?teamId=${teamId}` : ""}`),
