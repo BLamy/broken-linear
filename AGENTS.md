@@ -23,16 +23,19 @@ The `.tasks/` directory is the product backlog and execution record.
    and run its authenticated Replay QA release gate once.
 6. Always reuse the canonical Broken Linear Replay QA project configured in
    `.replay/config.json`:
-   `proj-broken-linear-qa-localhost-20260722-mrw4p4rq`. Create a new app version
-   and epic-specific journeys inside that project; never create a project per
-   epic, task, fix, or regression.
-7. If the canonical project is unavailable or cannot accept a new version, stop
-   and report the blocker. Do not silently create a replacement project.
-8. Treat queued, incomplete, OAuth-only, or infrastructure-failed runs as
+   `proj-broken-linear-qa-localhost-20260722-mrw4p4rq`. Start its tunnel and an
+   epic-specific focused exploration inside that project; never create a
+   project per epic, task, fix, or regression.
+7. App versions are optional metadata. Create one only when the canonical
+   project supports versions; lack of version support does not block the tunnel
+   or focused exploration.
+8. If the canonical project itself is unavailable, stop and report the blocker.
+   Do not silently create a replacement project.
+9. Treat queued, incomplete, OAuth-only, or infrastructure-failed runs as
    inconclusive. Fix defects found by the end-of-epic gate and rerun only the
    affected journeys in the same project until they pass.
-9. Merge the epic PR only when its acceptance criteria, local checks, CI, and
-   Replay QA gate are green.
+10. Merge the epic PR only when its acceptance criteria, local checks, CI, and
+    Replay QA gate are green.
 
 ## Status
 

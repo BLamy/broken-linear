@@ -1,6 +1,6 @@
 # E02-T04 — Replay QA release gate
 
-Status: `blocked`
+Status: `in_progress`
 
 ## User outcome
 
