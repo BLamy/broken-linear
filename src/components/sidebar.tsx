@@ -76,7 +76,7 @@ export function Sidebar() {
         </button>
         <button
           onClick={() => setAddIssueOpen(true)}
-          className="rounded-md bg-[#5e6ad2] p-1.5 text-white hover:bg-[#4f5bc4]"
+          className="rounded-md bg-[#5c68cf] p-1.5 text-white hover:bg-[#4f5bc4]"
         >
           <Plus className="size-4" />
         </button>
@@ -90,7 +90,7 @@ export function Sidebar() {
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-white/6 bg-[#161618]">
       <div className="flex items-center justify-between px-3 py-3">
         <button className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-white/5">
-          <div className="flex size-6 items-center justify-center rounded-md bg-[#5e6ad2] text-[11px] font-bold text-white">
+          <div className="flex size-6 items-center justify-center rounded-md bg-[#5c68cf] text-[11px] font-bold text-white">
             L
           </div>
           <span className="text-sm font-medium">Linear</span>

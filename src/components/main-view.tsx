@@ -161,7 +161,7 @@ export function MainView() {
                 <Filter className="size-3.5" />
                 Filter
                 {activeFilterCount > 0 && (
-                  <span className="rounded bg-[#5e6ad2] px-1.5 text-[10px] text-white">
+                  <span className="rounded bg-[#5c68cf] px-1.5 text-[10px] text-white">
                     {activeFilterCount}
                   </span>
                 )}
@@ -277,7 +277,7 @@ export function MainView() {
 
           <Button
             size="sm"
-            className="h-7 bg-[#5e6ad2] text-xs hover:bg-[#4f5bc4]"
+            className="h-7 bg-[#5c68cf] text-xs hover:bg-[#4f5bc4]"
             onClick={() => setAddIssueOpen(true)}
           >
             <Plus className="size-3.5" /> New issue

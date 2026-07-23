@@ -282,7 +282,7 @@ export function AddIssueDialog() {
           </Button>
           <Button
             size="sm"
-            className="bg-[#5e6ad2] hover:bg-[#4f5bc4]"
+            className="bg-[#5c68cf] hover:bg-[#4f5bc4]"
             onClick={submit}
             disabled={!title.trim() || !activeTeamId || create.isPending}
           >
