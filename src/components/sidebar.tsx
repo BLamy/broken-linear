@@ -2,6 +2,7 @@ import {
   CircleDot,
   Inbox,
   LayoutGrid,
+  LogOut,
   PanelLeft,
   Plus,
   Search,
@@ -64,21 +65,35 @@ export function Sidebar() {
   const { data: session } = useSession()
   const inboxCount = countInbox(allIssues)
   const myCount = countMyIssues(allIssues, session?.user?.id)
+  const logOut = () => {
+    void api.logout().finally(() => window.location.assign("/"))
+  }
 
   if (sidebarCollapsed) {
     return (
       <aside className="flex h-full w-12 flex-col items-center gap-3 border-r border-white/6 bg-[#161618] py-4">
         <button
           onClick={toggleSidebar}
+          aria-label="Expand sidebar"
           className="text-muted-foreground hover:text-foreground"
         >
           <PanelLeft className="size-4" />
         </button>
         <button
           onClick={() => setAddIssueOpen(true)}
+          aria-label="New issue"
           className="rounded-md bg-[#5c68cf] p-1.5 text-white hover:bg-[#4f5bc4]"
         >
           <Plus className="size-4" />
+        </button>
+        <button
+          onClick={logOut}
+          aria-label="Log out"
+          title="Log out"
+          className="mt-auto rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+          <span className="sr-only">Log out</span>
         </button>
       </aside>
     )
@@ -113,9 +128,7 @@ export function Sidebar() {
           </p>
           <button
             className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              api.logout().finally(() => window.location.assign("/"))
-            }}
+            onClick={logOut}
           >
             Log out
           </button>
