@@ -1,7 +1,12 @@
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -104,6 +109,9 @@ export function AddIssueDialog() {
       <DialogContent className="top-[20%] max-w-2xl translate-y-0 gap-0 border-white/10 bg-[#161618] p-0">
         <div className="p-4">
           <DialogTitle className="sr-only">New issue</DialogTitle>
+          <DialogDescription className="sr-only">
+            Create an issue and assign its triage metadata.
+          </DialogDescription>
           <input
             autoFocus
             value={title}
@@ -143,7 +151,11 @@ export function AddIssueDialog() {
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(STATUS_META).map(([key, meta]) => (
-                  <SelectItem key={key} value={key}>
+                  <SelectItem
+                    key={key}
+                    value={key}
+                    aria-label={`Set status to ${meta.label}`}
+                  >
                     {meta.label}
                   </SelectItem>
                 ))}
@@ -166,7 +178,11 @@ export function AddIssueDialog() {
               </SelectTrigger>
               <SelectContent>
                 {teams.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
+                  <SelectItem
+                    key={t.id}
+                    value={t.id}
+                    aria-label={`Select team ${t.name}`}
+                  >
                     {t.name}
                   </SelectItem>
                 ))}
@@ -185,9 +201,15 @@ export function AddIssueDialog() {
                 <SelectValue placeholder="Project" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No project</SelectItem>
+                <SelectItem value="none" aria-label="Select no project">
+                  No project
+                </SelectItem>
                 {teamProjects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
+                  <SelectItem
+                    key={p.id}
+                    value={p.id}
+                    aria-label={`Select project ${p.name}`}
+                  >
                     {p.name}
                   </SelectItem>
                 ))}
@@ -207,7 +229,11 @@ export function AddIssueDialog() {
               </SelectTrigger>
               <SelectContent>
                 {([0, 1, 2, 3, 4] as Priority[]).map((p) => (
-                  <SelectItem key={p} value={String(p)}>
+                  <SelectItem
+                    key={p}
+                    value={String(p)}
+                    aria-label={`Set priority to ${PRIORITY_META[p].label}`}
+                  >
                     {PRIORITY_META[p].label}
                   </SelectItem>
                 ))}
@@ -226,9 +252,15 @@ export function AddIssueDialog() {
                 <SelectValue placeholder="Assignee" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Unassigned</SelectItem>
+                <SelectItem value="none" aria-label="Select no assignee">
+                  Unassigned
+                </SelectItem>
                 {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
+                  <SelectItem
+                    key={user.id}
+                    value={user.id}
+                    aria-label={`Assign to ${user.name}`}
+                  >
                     {user.name}
                   </SelectItem>
                 ))}

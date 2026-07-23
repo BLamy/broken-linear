@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react"
 import { ExternalLink, Loader2, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -76,6 +81,9 @@ function DetailBody({ issue }: { issue: Issue }) {
   return (
     <div className="flex max-h-[85vh] flex-col">
       <DialogTitle className="sr-only">{issue.title}</DialogTitle>
+      <DialogDescription className="sr-only">
+        View, edit, or delete this issue.
+      </DialogDescription>
 
       <div className="flex items-center gap-2 border-b border-white/6 px-5 py-3">
         <span className="font-mono text-xs text-muted-foreground">
@@ -322,6 +330,9 @@ export function IssueDetailDialog() {
         ) : (
           <div className="p-6 text-sm text-muted-foreground">
             <DialogTitle className="sr-only">Issue</DialogTitle>
+            <DialogDescription className="sr-only">
+              The selected issue could not be found.
+            </DialogDescription>
             Issue not found.
           </div>
         )}
