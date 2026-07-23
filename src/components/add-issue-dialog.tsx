@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -10,13 +11,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useUIStore } from "@/store/ui-store"
+import { IssueLabelPicker } from "@/components/issue-label-picker"
 import {
   useCreateIssue,
   useLabels,
   useProjects,
   useTeams,
+  useUsers,
 } from "@/queries/issues"
-import { PRIORITY_META, type Priority } from "@/lib/types"
+import {
+  PRIORITY_META,
+  STATUS_META,
+  type IssueStatus,
+  type Priority,
+} from "@/lib/types"
 
 export function AddIssueDialog() {
   const open = useUIStore((s) => s.addIssueOpen)
@@ -25,6 +33,7 @@ export function AddIssueDialog() {
   const { data: teams = [] } = useTeams()
   const { data: projects = [] } = useProjects()
   const { data: labels = [] } = useLabels()
+  const { data: users = [] } = useUsers()
   const create = useCreateIssue()
 
   const fallbackTeamId = teams[0]?.id ?? ""
@@ -42,12 +51,16 @@ export function AddIssueDialog() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<Priority>(0)
+  const [status, setStatus] = useState<IssueStatus>("todo")
   const [teamId, setTeamId] = useState("")
   const [projectId, setProjectId] = useState(defaultProjectId)
+  const [assigneeId, setAssigneeId] = useState("")
+  const [labelIds, setLabelIds] = useState<string[] | null>(null)
   const activeTeamId = teamId || defaultTeamId
   const bugLabelId = labels.find(
     (label) => label.name.toLowerCase() === "bug"
   )?.id
+  const activeLabelIds = labelIds ?? (bugLabelId ? [bugLabelId] : [])
 
   const teamProjects = projects.filter((p) => p.teamId === activeTeamId)
 
@@ -55,8 +68,11 @@ export function AddIssueDialog() {
     setTitle("")
     setDescription("")
     setPriority(0)
+    setStatus("todo")
     setTeamId("")
     setProjectId(defaultProjectId)
+    setAssigneeId("")
+    setLabelIds(null)
   }
 
   const submit = () => {
@@ -66,9 +82,11 @@ export function AddIssueDialog() {
         title,
         description: description || null,
         priority,
+        status,
         teamId: activeTeamId,
         projectId: projectId || null,
-        labelIds: bugLabelId ? [bugLabelId] : [],
+        assigneeId: assigneeId || null,
+        labelIds: activeLabelIds,
       },
       {
         onSuccess: () => {
@@ -91,7 +109,14 @@ export function AddIssueDialog() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") submit()
+              if (
+                e.key === "Enter" &&
+                (e.metaKey || e.ctrlKey) &&
+                !create.isPending
+              ) {
+                e.preventDefault()
+                submit()
+              }
             }}
             placeholder="Issue title"
             className="w-full bg-transparent text-lg font-medium outline-none placeholder:text-muted-foreground"
@@ -106,13 +131,37 @@ export function AddIssueDialog() {
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Select
+              value={status}
+              onValueChange={(v) => setStatus(v as IssueStatus)}
+            >
+              <SelectTrigger
+                size="sm"
+                className="h-7 text-xs"
+                aria-label="Status"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_META).map(([key, meta]) => (
+                  <SelectItem key={key} value={key}>
+                    {meta.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
               value={activeTeamId}
               onValueChange={(v) => {
                 setTeamId(v)
                 setProjectId("")
               }}
             >
-              <SelectTrigger size="sm" className="h-7 text-xs">
+              <SelectTrigger
+                size="sm"
+                className="h-7 text-xs"
+                aria-label="Team"
+              >
                 <SelectValue placeholder="Team" />
               </SelectTrigger>
               <SelectContent>
@@ -128,7 +177,11 @@ export function AddIssueDialog() {
               value={projectId || "none"}
               onValueChange={(v) => setProjectId(v === "none" ? "" : v)}
             >
-              <SelectTrigger size="sm" className="h-7 text-xs">
+              <SelectTrigger
+                size="sm"
+                className="h-7 text-xs"
+                aria-label="Project"
+              >
                 <SelectValue placeholder="Project" />
               </SelectTrigger>
               <SelectContent>
@@ -145,7 +198,11 @@ export function AddIssueDialog() {
               value={String(priority)}
               onValueChange={(v) => setPriority(Number(v) as Priority)}
             >
-              <SelectTrigger size="sm" className="h-7 text-xs">
+              <SelectTrigger
+                size="sm"
+                className="h-7 text-xs"
+                aria-label="Priority"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -156,6 +213,34 @@ export function AddIssueDialog() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select
+              value={assigneeId || "none"}
+              onValueChange={(v) => setAssigneeId(v === "none" ? "" : v)}
+            >
+              <SelectTrigger
+                size="sm"
+                className="h-7 text-xs"
+                aria-label="Assignee"
+              >
+                <SelectValue placeholder="Assignee" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Unassigned</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <IssueLabelPicker
+              labels={labels}
+              value={activeLabelIds}
+              onChange={setLabelIds}
+              disabled={create.isPending}
+            />
           </div>
         </div>
 
@@ -169,7 +254,11 @@ export function AddIssueDialog() {
             onClick={submit}
             disabled={!title.trim() || !activeTeamId || create.isPending}
           >
+            {create.isPending && <Loader2 className="size-4 animate-spin" />}
             Create issue
+            <span className="ml-1 hidden text-[10px] text-white/60 sm:inline">
+              ⌘↵
+            </span>
           </Button>
         </div>
       </DialogContent>

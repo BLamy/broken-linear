@@ -1,10 +1,10 @@
-import { Trash2 } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { useMemo, useState } from "react"
+import { ExternalLink, Loader2, Save, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { IssueLabelPicker } from "@/components/issue-label-picker"
 import { useUIStore } from "@/store/ui-store"
 import {
   useDeleteIssue,
@@ -29,7 +30,6 @@ import {
   type IssueStatus,
   type Priority,
 } from "@/lib/types"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 function DetailBody({ issue }: { issue: Issue }) {
   const { data: teams = [] } = useTeams()
@@ -39,181 +39,286 @@ function DetailBody({ issue }: { issue: Issue }) {
   const update = useUpdateIssue()
   const remove = useDeleteIssue()
   const selectIssue = useUIStore((s) => s.selectIssue)
+  const [title, setTitle] = useState(issue.title)
+  const [description, setDescription] = useState(issue.description ?? "")
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const team = teams.find((t) => t.id === issue.teamId)
-  const project = projects.find((p) => p.id === issue.projectId)
-  const assignee = users.find((u) => u.id === issue.assigneeId)
-  const status = STATUS_META[issue.status]
+  const team = teams.find((item) => item.id === issue.teamId)
+  const teamProjects = projects.filter((item) => item.teamId === issue.teamId)
+  const dirty =
+    title.trim() !== issue.title ||
+    description.trim() !== (issue.description ?? "")
+
+  const patch = (next: Partial<Issue>, successMessage = "Issue updated") => {
+    update.mutate(
+      { id: issue.id, patch: next },
+      {
+        onSuccess: () => toast.success(successMessage),
+        onError: (error) =>
+          toast.error(
+            error instanceof Error ? error.message : "Could not update issue"
+          ),
+      }
+    )
+  }
+
+  const saveText = () => {
+    if (!title.trim() || !dirty) return
+    patch(
+      {
+        title: title.trim(),
+        description: description.trim() || null,
+      },
+      "Issue details saved"
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-4 p-5">
+    <div className="flex max-h-[85vh] flex-col">
       <DialogTitle className="sr-only">{issue.title}</DialogTitle>
 
-      <div className="flex items-start gap-3">
-        <span className="font-mono text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 border-b border-white/6 px-5 py-3">
+        <span className="font-mono text-xs text-muted-foreground">
           {issue.identifier}
         </span>
-        <span
-          className="rounded px-1.5 py-0.5 text-xs"
-          style={{ color: status.color, backgroundColor: status.bg }}
-        >
-          {status.label}
+        <span className="text-xs text-muted-foreground">·</span>
+        <span className="text-xs text-muted-foreground">
+          {team?.name ?? "Team"}
         </span>
+        {issue.url && (
+          <a
+            className="ml-auto flex items-center gap-1 text-xs text-[#8f98ff] hover:text-[#b6bcff]"
+            href={issue.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open in Linear <ExternalLink className="size-3" />
+          </a>
+        )}
       </div>
 
-      <h2 className="text-lg font-semibold">{issue.title}</h2>
-      <p className="text-sm text-muted-foreground">
-        {issue.description || "No description"}
-      </p>
-      {issue.url && (
-        <a
-          className="text-sm text-[#8f98ff] hover:text-[#b6bcff]"
-          href={issue.url}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open in Linear
-        </a>
-      )}
+      <div className="overflow-y-auto p-5">
+        <div className="space-y-3">
+          <Input
+            aria-label="Issue title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="h-auto border-transparent px-0 py-1 text-lg font-semibold focus-visible:border-white/10 focus-visible:px-2"
+          />
+          <Textarea
+            aria-label="Issue description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Add a description…"
+            className="min-h-24 border-white/8 bg-white/[0.02]"
+          />
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              onClick={saveText}
+              disabled={!dirty || !title.trim() || update.isPending}
+            >
+              {update.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
+              Save details
+            </Button>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-[100px_1fr] gap-y-3 border-t border-white/6 pt-4 text-sm">
-        <span className="text-muted-foreground">Status</span>
-        <Select
-          value={issue.status}
-          onValueChange={(v) =>
-            update.mutate({ id: issue.id, patch: { status: v as IssueStatus } })
-          }
-        >
-          <SelectTrigger size="sm" className="h-7 w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(STATUS_META).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>
-                {meta.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="mt-5 grid grid-cols-[100px_minmax(0,1fr)] items-center gap-y-3 border-t border-white/6 pt-5 text-sm">
+          <span className="text-muted-foreground">Status</span>
+          <Select
+            value={issue.status}
+            disabled={update.isPending}
+            onValueChange={(value) =>
+              patch({ status: value as IssueStatus }, "Status updated")
+            }
+          >
+            <SelectTrigger size="sm" className="h-7 w-44" aria-label="Status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(STATUS_META).map(([key, meta]) => (
+                <SelectItem key={key} value={key}>
+                  {meta.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <span className="text-muted-foreground">Priority</span>
-        <Select
-          value={String(issue.priority)}
-          onValueChange={(v) =>
-            update.mutate({
-              id: issue.id,
-              patch: { priority: Number(v) as Priority },
-            })
-          }
-        >
-          <SelectTrigger size="sm" className="h-7 w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {([0, 1, 2, 3, 4] as Priority[]).map((p) => (
-              <SelectItem key={p} value={String(p)}>
-                {PRIORITY_META[p].label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <span className="text-muted-foreground">Priority</span>
+          <Select
+            value={String(issue.priority)}
+            disabled={update.isPending}
+            onValueChange={(value) =>
+              patch({ priority: Number(value) as Priority }, "Priority updated")
+            }
+          >
+            <SelectTrigger size="sm" className="h-7 w-44" aria-label="Priority">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {([0, 1, 2, 3, 4] as Priority[]).map((priority) => (
+                <SelectItem key={priority} value={String(priority)}>
+                  {PRIORITY_META[priority].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <span className="text-muted-foreground">Team</span>
-        <span>{team?.name ?? "—"}</span>
+          <span className="text-muted-foreground">Project</span>
+          <Select
+            value={issue.projectId ?? "none"}
+            disabled={update.isPending}
+            onValueChange={(value) =>
+              patch(
+                { projectId: value === "none" ? null : value },
+                "Project updated"
+              )
+            }
+          >
+            <SelectTrigger size="sm" className="h-7 w-44" aria-label="Project">
+              <SelectValue placeholder="No project" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No project</SelectItem>
+              {teamProjects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <span className="text-muted-foreground">Project</span>
-        <span>{project?.name ?? "No project"}</span>
+          <span className="text-muted-foreground">Assignee</span>
+          <Select
+            value={issue.assigneeId ?? "none"}
+            disabled={update.isPending}
+            onValueChange={(value) =>
+              patch(
+                { assigneeId: value === "none" ? null : value },
+                "Assignee updated"
+              )
+            }
+          >
+            <SelectTrigger size="sm" className="h-7 w-44" aria-label="Assignee">
+              <SelectValue placeholder="Unassigned" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Unassigned</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <span className="text-muted-foreground">Assignee</span>
-        <Select
-          value={issue.assigneeId ?? "none"}
-          onValueChange={(v) =>
-            update.mutate({
-              id: issue.id,
-              patch: { assigneeId: v === "none" ? null : v },
-            })
-          }
-        >
-          <SelectTrigger size="sm" className="h-7 w-40">
-            <SelectValue>{assignee?.name ?? "Unassigned"}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Unassigned</SelectItem>
-            {users.map((u) => (
-              <SelectItem key={u.id} value={u.id}>
-                {u.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <span className="text-muted-foreground">Labels</span>
-        <span className="flex flex-wrap gap-1.5">
-          {issue.labelIds.length > 0
-            ? issue.labelIds.map((id) => {
-                const label = labels.find((l) => l.id === id)
+          <span className="self-start pt-1 text-muted-foreground">Labels</span>
+          <div className="min-w-0">
+            <IssueLabelPicker
+              labels={labels}
+              value={issue.labelIds}
+              disabled={update.isPending}
+              onChange={(labelIds) => patch({ labelIds }, "Labels updated")}
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {issue.labelIds.map((id) => {
+                const label = labels.find((item) => item.id === id)
                 return label ? (
                   <span
                     key={id}
                     className="rounded px-1.5 py-0.5 text-xs"
                     style={{
-                      color: "#f1f1f1",
-                      backgroundColor: `${label.color}44`,
-                      border: `1px solid ${label.color}`,
+                      backgroundColor: `${label.color}33`,
+                      border: `1px solid ${label.color}88`,
                     }}
                   >
                     {label.name}
                   </span>
                 ) : null
-              })
-            : "—"}
-        </span>
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {assignee && (
-        <div className="flex items-center gap-2 border-t border-white/6 pt-3 text-sm">
-          <Avatar className="size-6">
-            <AvatarFallback
-              className="text-[10px] text-white"
-              style={{ backgroundColor: assignee.color }}
-            >
-              {assignee.initials}
-            </AvatarFallback>
-          </Avatar>
-          <span>{assignee.name}</span>
-        </div>
-      )}
-
-      <div className="flex justify-end border-t border-white/6 pt-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-[#eb5757]"
-          onClick={() =>
-            remove.mutate(issue.id, { onSuccess: () => selectIssue(null) })
-          }
-        >
-          <Trash2 className="size-4" /> Delete
-        </Button>
+      <div className="border-t border-white/6 px-5 py-3">
+        {confirmDelete ? (
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground">
+              Permanently delete {issue.identifier}?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(false)}
+                disabled={remove.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={remove.isPending}
+                onClick={() =>
+                  remove.mutate(issue.id, {
+                    onSuccess: () => {
+                      toast.success("Issue deleted")
+                      selectIssue(null)
+                    },
+                    onError: (error) =>
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Could not delete issue"
+                      ),
+                  })
+                }
+              >
+                {remove.isPending && (
+                  <Loader2 className="size-4 animate-spin" />
+                )}
+                Delete issue
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[#eb5757]"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="size-4" /> Delete issue
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
 export function IssueDetailDialog() {
-  const selectedIssueId = useUIStore((s) => s.selectedIssueId)
-  const selectIssue = useUIStore((s) => s.selectIssue)
+  const selectedIssueId = useUIStore((state) => state.selectedIssueId)
+  const selectIssue = useUIStore((state) => state.selectIssue)
   const { data: issues = [] } = useIssues("active")
-  const issue = issues.find((i) => i.id === selectedIssueId)
+  const issue = useMemo(
+    () => issues.find((item) => item.id === selectedIssueId),
+    [issues, selectedIssueId]
+  )
 
   return (
     <Dialog
       open={selectedIssueId != null}
       onOpenChange={(open) => !open && selectIssue(null)}
     >
-      <DialogContent className="max-w-xl gap-0 border-white/10 bg-[#161618] p-0">
+      <DialogContent className="max-w-2xl gap-0 border-white/10 bg-[#161618] p-0">
         {issue ? (
-          <DetailBody issue={issue} />
+          <DetailBody key={issue.id} issue={issue} />
         ) : (
           <div className="p-6 text-sm text-muted-foreground">
             <DialogTitle className="sr-only">Issue</DialogTitle>

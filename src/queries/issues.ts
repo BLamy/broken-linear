@@ -1,17 +1,19 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import type { Issue, ViewId } from "@/lib/types"
+
+function invalidateIssueData(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ["issues"] })
+  qc.invalidateQueries({ queryKey: ["search"] })
+}
 
 export function scopeForView(view: ViewId): {
   teamId?: string
   projectId?: string
 } {
   if (view.startsWith("team:")) return { teamId: view.slice("team:".length) }
-  if (view.startsWith("project:")) return { projectId: view.slice("project:".length) }
+  if (view.startsWith("project:"))
+    return { projectId: view.slice("project:".length) }
   return {}
 }
 
@@ -53,7 +55,7 @@ export function useCreateIssue() {
     mutationFn: (input: Partial<Issue> & { teamId: string }) =>
       api.createIssue(input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issues"] })
+      invalidateIssueData(qc)
     },
   })
 }
@@ -64,7 +66,7 @@ export function useUpdateIssue() {
     mutationFn: ({ id, patch }: { id: string; patch: Partial<Issue> }) =>
       api.updateIssue(id, patch),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issues"] })
+      invalidateIssueData(qc)
     },
   })
 }
@@ -74,7 +76,7 @@ export function useDeleteIssue() {
   return useMutation({
     mutationFn: (id: string) => api.deleteIssue(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["issues"] })
+      invalidateIssueData(qc)
     },
   })
 }
