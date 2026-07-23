@@ -80,7 +80,7 @@ export const STATUS_META: Record<
   { label: string; color: string; bg: string }
 > = {
   backlog: { label: "Backlog", color: "#95a2b3", bg: "#95a2b322" },
-  todo: { label: "Todo", color: "#5e6ad2", bg: "#5e6ad222" },
+  todo: { label: "Todo", color: "#8f98ff", bg: "#5e6ad222" },
   in_progress: { label: "In Progress", color: "#f2c94c", bg: "#f2c94c22" },
   in_review: { label: "In Review", color: "#bb6bd9", bg: "#bb6bd922" },
   done: { label: "Done", color: "#4cb782", bg: "#4cb78222" },
