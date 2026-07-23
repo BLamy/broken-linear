@@ -17,11 +17,29 @@ The `.tasks/` directory is the product backlog and execution record.
 2. Work through tasks in order and update their status.
 3. Verify each task with the smallest meaningful checks and record the result in
    its `work/RESULTS.md`.
-4. After all feature tasks pass, run the epic's authenticated Replay QA journeys.
-5. Treat queued, incomplete, OAuth-only, or infrastructure-failed runs as
-   inconclusive. Fix product defects and rerun until the journeys pass.
-6. Merge the epic PR only when its acceptance criteria, local checks, CI, and
-   Replay QA gate are green.
+4. Do not run Replay QA while feature tasks are still being implemented. Use
+   local checks and focused browser verification during development.
+5. After every feature task in the epic passes locally, move the epic to `qa`
+   and run its authenticated Replay QA release gate once.
+6. Always reuse the canonical Broken Linear Replay QA project configured in
+   `.replay/config.json`:
+   `proj-broken-linear-qa-localhost-20260722-mrw4p4rq`. Start its tunnel and an
+   epic-specific focused exploration inside that project; never create a
+   project per epic, task, fix, or regression.
+7. App versions are optional metadata. Create one only when the canonical
+   project supports versions; lack of version support does not block the tunnel
+   or focused exploration.
+8. If the canonical project itself is unavailable, stop and report the blocker.
+   Do not silently create a replacement project.
+9. Treat queued, incomplete, OAuth-only, or infrastructure-failed runs as
+   inconclusive. Fix defects found by the end-of-epic gate and rerun only the
+   affected journeys in the same project until they pass.
+10. If an exploration generates journeys outside the requested epic scope,
+    stop the tunnel before unrelated write journeys execute. Record the
+    exploration as inconclusive; do not accept unrelated coverage as the epic
+    gate.
+11. Merge the epic PR only when its acceptance criteria, local checks, CI, and
+    Replay QA gate are green.
 
 ## Status
 
