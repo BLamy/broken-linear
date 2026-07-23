@@ -1,6 +1,6 @@
 # E00 — Issue triage and editing
 
-Status: `qa`
+Status: `done`
 
 ## Outcome
 
@@ -15,7 +15,7 @@ edit every supported field, and delete it safely.
 | [E00-T01](tasks/E00-T01-complete-issue-editor/README.md) | Complete issue creation and editing | done |
 | [E00-T02](tasks/E00-T02-filter-sort/README.md) | Working filters and sorting | done |
 | [E00-T03](tasks/E00-T03-keyboard-polish/README.md) | Keyboard-first and resilient workflows | done |
-| [E00-T04](tasks/E00-T04-replayqa-release-gate/README.md) | Authenticated Replay QA release gate | in_progress |
+| [E00-T04](tasks/E00-T04-replayqa-release-gate/README.md) | Authenticated Replay QA release gate | done |
 
 ## Release criteria
 
