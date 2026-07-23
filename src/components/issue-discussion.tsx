@@ -10,11 +10,7 @@ import {
   X,
 } from "lucide-react"
 import { toast } from "sonner"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -137,10 +133,7 @@ function CommentItem({
               value={body}
               onChange={(event) => setBody(event.target.value)}
               onKeyDown={(event) => {
-                if (
-                  event.key === "Enter" &&
-                  (event.metaKey || event.ctrlKey)
-                ) {
+                if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                   event.preventDefault()
                   save()
                 }
@@ -206,7 +199,7 @@ function CommentItem({
             </div>
           </div>
         ) : (
-          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-[#d8d8dc]">
+          <p className="text-sm leading-6 break-words whitespace-pre-wrap text-[#d8d8dc]">
             {comment.body}
           </p>
         )}
@@ -239,7 +232,7 @@ export function IssueDiscussion({ issueId }: { issueId: string }) {
         <MessageSquare className="size-4 text-muted-foreground" />
         <h2 className="text-sm font-medium">Discussion</h2>
         {comments.data && comments.data.length > 0 && (
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {comments.data.length}
           </span>
         )}
@@ -267,11 +260,7 @@ export function IssueDiscussion({ issueId }: { issueId: string }) {
       ) : comments.data?.length ? (
         <div className="space-y-5">
           {comments.data.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              issueId={issueId}
-            />
+            <CommentItem key={comment.id} comment={comment} issueId={issueId} />
           ))}
         </div>
       ) : (
@@ -283,10 +272,7 @@ export function IssueDiscussion({ issueId }: { issueId: string }) {
       <div className="mt-5 flex gap-3">
         <Avatar size="sm" className="mt-1">
           {session?.user?.avatarUrl && (
-            <AvatarImage
-              src={session.user.avatarUrl}
-              alt={session.user.name}
-            />
+            <AvatarImage src={session.user.avatarUrl} alt={session.user.name} />
           )}
           <AvatarFallback className="text-[10px]">
             {session?.user?.name
@@ -304,10 +290,7 @@ export function IssueDiscussion({ issueId }: { issueId: string }) {
             value={body}
             onChange={(event) => setBody(event.target.value)}
             onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                (event.metaKey || event.ctrlKey)
-              ) {
+              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                 event.preventDefault()
                 submit()
               }

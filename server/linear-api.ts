@@ -859,7 +859,8 @@ async function updateLinearComment(
 ): Promise<Comment> {
   const config = getConfig(new Request("http://local.invalid/api/session"), env)
   const existing = await getLinearComment(session, env, id)
-  if (!existing.isOwn) throw new ApiError("You can only edit your comments", 403)
+  if (!existing.isOwn)
+    throw new ApiError("You can only edit your comments", 403)
   const result = await linearGraphql<{
     commentUpdate: { success: boolean; comment: LinearComment | null }
   }>(
