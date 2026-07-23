@@ -80,3 +80,41 @@ export function useDeleteIssue() {
     },
   })
 }
+
+export function useComments(issueId: string) {
+  return useQuery({
+    queryKey: ["comments", issueId],
+    queryFn: () => api.getComments(issueId),
+  })
+}
+
+export function useCreateComment(issueId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: string) => api.createComment(issueId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comments", issueId] })
+    },
+  })
+}
+
+export function useUpdateComment(issueId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: string }) =>
+      api.updateComment(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comments", issueId] })
+    },
+  })
+}
+
+export function useDeleteComment(issueId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.deleteComment(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comments", issueId] })
+    },
+  })
+}

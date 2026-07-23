@@ -52,6 +52,16 @@ export interface Issue {
   url?: string
 }
 
+export interface Comment {
+  id: string
+  issueId: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  author: User | null
+  isOwn: boolean
+}
+
 export interface Session {
   authenticated: boolean
   user: {

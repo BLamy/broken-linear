@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { IssueLabelPicker } from "@/components/issue-label-picker"
+import { IssueDiscussion } from "@/components/issue-discussion"
 import { useUIStore } from "@/store/ui-store"
 import {
   useDeleteIssue,
@@ -252,6 +253,8 @@ function DetailBody({ issue }: { issue: Issue }) {
             </div>
           </div>
         </div>
+
+        <IssueDiscussion issueId={issue.id} />
       </div>
 
       <div className="border-t border-white/6 px-5 py-3">
