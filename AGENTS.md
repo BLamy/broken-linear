@@ -34,7 +34,11 @@ The `.tasks/` directory is the product backlog and execution record.
 9. Treat queued, incomplete, OAuth-only, or infrastructure-failed runs as
    inconclusive. Fix defects found by the end-of-epic gate and rerun only the
    affected journeys in the same project until they pass.
-10. Merge the epic PR only when its acceptance criteria, local checks, CI, and
+10. If an exploration generates journeys outside the requested epic scope,
+    stop the tunnel before unrelated write journeys execute. Record the
+    exploration as inconclusive; do not accept unrelated coverage as the epic
+    gate.
+11. Merge the epic PR only when its acceptance criteria, local checks, CI, and
     Replay QA gate are green.
 
 ## Status
