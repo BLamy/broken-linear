@@ -19,16 +19,25 @@ interface UIState {
 function viewFromPathname(pathname: string): ViewId {
   const teamMatch = pathname.match(/^\/teams\/([^/]+)$/)
   if (teamMatch) return `team:${decodeURIComponent(teamMatch[1])}`
-  return pathname === "/my-issues" ? "my-issues" : "active"
+  const projectMatch = pathname.match(/^\/projects\/([^/]+)$/)
+  if (projectMatch) return `project:${decodeURIComponent(projectMatch[1])}`
+  if (pathname === "/inbox") return "inbox"
+  if (pathname === "/my-issues") return "my-issues"
+  if (pathname === "/search") return "search"
+  return "active"
 }
 
-function pathnameForView(view: ViewId): string | null {
+function pathnameForView(view: ViewId): string {
   if (view.startsWith("team:")) {
     return `/teams/${encodeURIComponent(view.slice("team:".length))}`
   }
+  if (view.startsWith("project:")) {
+    return `/projects/${encodeURIComponent(view.slice("project:".length))}`
+  }
+  if (view === "inbox") return "/inbox"
   if (view === "my-issues") return "/my-issues"
-  if (view === "active") return "/"
-  return null
+  if (view === "search") return "/search"
+  return "/"
 }
 
 function readCollapsed(): boolean {
@@ -51,7 +60,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   setView: (view) => {
     const pathname = pathnameForView(view)
-    if (pathname && window.location.pathname !== pathname) {
+    if (window.location.pathname !== pathname) {
       window.history.pushState(null, "", pathname)
     }
     set({ view, selectedIssueId: null })
