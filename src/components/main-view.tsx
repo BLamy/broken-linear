@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react"
-import { Filter, Plus, SlidersHorizontal, X } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { Plus } from "lucide-react"
+import { toast } from "sonner"
 import { useUIStore } from "@/store/ui-store"
 import {
   useIssues,
@@ -10,43 +11,30 @@ import {
   useUsers,
 } from "@/queries/issues"
 import { filterIssuesForView } from "@/lib/issue-filters"
+import {
+  createDefaultIssueViewState,
+  EMPTY_VALUE,
+  filterAndSortIssues,
+  issueViewStateSearch,
+  readIssueViewState,
+  type IssueViewState,
+} from "@/lib/issue-view-state"
+import {
+  createSavedIssueView,
+  deleteSavedIssueView,
+  readSavedIssueViews,
+  renameSavedIssueView,
+  type SavedIssueView,
+} from "@/lib/saved-issue-views"
 import { IssueList } from "@/components/issue-list"
 import { SearchView } from "@/components/search-view"
-import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  IssueViewToolbar,
+  type FilterGroup,
+} from "@/components/issue-view-toolbar"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { PRIORITY_META, STATUS_META, type Issue } from "@/lib/types"
-
-type SortMode = "updated" | "priority" | "identifier"
-type FilterState = {
-  status: string
-  priority: string
-  assignee: string
-  label: string
-}
-
-const EMPTY_FILTERS: FilterState = {
-  status: "all",
-  priority: "all",
-  assignee: "all",
-  label: "all",
-}
-
-function priorityRank(priority: Issue["priority"]) {
-  return priority === 0 ? 5 : priority
-}
 
 function useViewTitle() {
   const view = useUIStore((state) => state.view)
@@ -73,17 +61,23 @@ function useViewTitle() {
 }
 
 export function MainView() {
-  const [density, setDensity] = useState<"comfortable" | "compact">(
-    "comfortable"
-  )
-  const [sort, setSort] = useState<SortMode>("updated")
-  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const view = useUIStore((state) => state.view)
   const setAddIssueOpen = useUIStore((state) => state.setAddIssueOpen)
   const { title, subtitle } = useViewTitle()
   const { data: session } = useSession()
+  const workspaceId = session?.organization?.id ?? ""
+  const [viewState, setViewState] = useState<IssueViewState>(() =>
+    typeof window === "undefined"
+      ? createDefaultIssueViewState()
+      : readIssueViewState(window.location.search)
+  )
+  const [savedViews, setSavedViews] = useState<SavedIssueView[]>(() =>
+    readSavedIssueViews(workspaceId)
+  )
   const { data: users = [] } = useUsers()
   const { data: labels = [] } = useLabels()
+  const { data: teams = [] } = useTeams()
+  const { data: projects = [] } = useProjects()
   const {
     data: issues = [],
     isLoading,
@@ -92,54 +86,153 @@ export function MainView() {
     refetch,
   } = useIssues(view)
 
-  const baseIssues = filterIssuesForView(issues, view, session?.user?.id)
-  const activeFilterCount = Object.values(filters).filter(
-    (value) => value !== "all"
-  ).length
-  const filtered = useMemo(() => {
-    const result = baseIssues.filter((issue) => {
-      if (filters.status !== "all" && issue.status !== filters.status) {
-        return false
-      }
-      if (
-        filters.priority !== "all" &&
-        String(issue.priority) !== filters.priority
-      ) {
-        return false
-      }
-      if (
-        filters.assignee !== "all" &&
-        (filters.assignee === "unassigned"
-          ? issue.assigneeId !== null
-          : issue.assigneeId !== filters.assignee)
-      ) {
-        return false
-      }
-      if (filters.label !== "all" && !issue.labelIds.includes(filters.label)) {
-        return false
-      }
-      return true
-    })
+  useEffect(() => {
+    const syncFromHistory = () =>
+      setViewState(readIssueViewState(window.location.search))
+    window.addEventListener("popstate", syncFromHistory)
+    return () => window.removeEventListener("popstate", syncFromHistory)
+  }, [])
 
-    return result.sort((a, b) => {
-      if (sort === "priority") {
-        return priorityRank(a.priority) - priorityRank(b.priority)
+  const updateViewState = useCallback(
+    (next: IssueViewState, mode: "push" | "replace" = "push") => {
+      const nextUrl = `${window.location.pathname}${issueViewStateSearch(next)}${window.location.hash}`
+      const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
+      if (nextUrl !== currentUrl) {
+        window.history[mode === "push" ? "pushState" : "replaceState"](
+          null,
+          "",
+          nextUrl
+        )
       }
-      if (sort === "identifier") {
-        return a.identifier.localeCompare(b.identifier, undefined, {
-          numeric: true,
-        })
+      setViewState(next)
+    },
+    []
+  )
+
+  const baseIssues = filterIssuesForView(issues, view, session?.user?.id)
+  const filtered = useMemo(
+    () => filterAndSortIssues(baseIssues, viewState),
+    [baseIssues, viewState]
+  )
+
+  const filterGroups = useMemo<FilterGroup[]>(() => {
+    const activeTeamId = view.startsWith("team:")
+      ? view.slice("team:".length)
+      : view.startsWith("project:")
+        ? projects.find(
+            (project) => project.id === view.slice("project:".length)
+          )?.teamId
+        : undefined
+    const activeProjectId = view.startsWith("project:")
+      ? view.slice("project:".length)
+      : undefined
+    const scopedTeams = activeTeamId
+      ? teams.filter((team) => team.id === activeTeamId)
+      : teams
+    const scopedProjects = activeProjectId
+      ? projects.filter((project) => project.id === activeProjectId)
+      : activeTeamId
+        ? projects.filter((project) => project.teamId === activeTeamId)
+        : projects
+
+    return [
+      {
+        key: "status",
+        label: "Status",
+        options: Object.entries(STATUS_META).map(([value, meta]) => ({
+          value,
+          label: meta.label,
+        })),
+      },
+      {
+        key: "priority",
+        label: "Priority",
+        options: ([0, 1, 2, 3, 4] as Issue["priority"][]).map((priority) => ({
+          value: String(priority),
+          label: PRIORITY_META[priority].label,
+        })),
+      },
+      {
+        key: "assignee",
+        label: "Assignee",
+        options: [
+          { value: EMPTY_VALUE, label: "Unassigned" },
+          ...users.map((user) => ({ value: user.id, label: user.name })),
+        ],
+      },
+      {
+        key: "project",
+        label: "Project",
+        options: [
+          { value: EMPTY_VALUE, label: "No project" },
+          ...scopedProjects.map((project) => ({
+            value: project.id,
+            label: project.name,
+          })),
+        ],
+      },
+      {
+        key: "team",
+        label: "Team",
+        options: scopedTeams.map((team) => ({
+          value: team.id,
+          label: team.name,
+        })),
+      },
+      {
+        key: "label",
+        label: "Label",
+        options: [
+          { value: EMPTY_VALUE, label: "No labels" },
+          ...labels.map((label) => ({ value: label.id, label: label.name })),
+        ],
+      },
+    ]
+  }, [labels, projects, teams, users, view])
+
+  const unavailableCriteria = useMemo(() => {
+    const unavailable: string[] = []
+    for (const group of filterGroups) {
+      const available = new Set(group.options.map((option) => option.value))
+      for (const selected of viewState.filters[group.key]) {
+        if (!available.has(selected)) {
+          unavailable.push(`${group.label}: ${selected}`)
+        }
       }
-      return b.updatedAt.localeCompare(a.updatedAt)
-    })
-  }, [baseIssues, filters, sort])
+    }
+    return unavailable
+  }, [filterGroups, viewState.filters])
 
   if (view === "search") {
     return <SearchView />
   }
 
-  const setFilter = (key: keyof FilterState, value: string) =>
-    setFilters((current) => ({ ...current, [key]: value }))
+  const applySavedView = (saved: SavedIssueView) => {
+    updateViewState(saved.state)
+    toast.success(`Applied “${saved.name}”`)
+  }
+
+  const createView = (name: string) => {
+    setSavedViews(createSavedIssueView(workspaceId, name, viewState))
+    toast.success(`Saved “${name.trim()}”`)
+  }
+
+  const renameView = (id: string, name: string) => {
+    setSavedViews(renameSavedIssueView(workspaceId, id, name))
+    toast.success("Saved view renamed")
+  }
+
+  const deleteView = (id: string) => {
+    setSavedViews(deleteSavedIssueView(workspaceId, id))
+    toast.success("Saved view deleted")
+  }
+
+  const copyLink = () => {
+    void navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => toast.success("View link copied"))
+      .catch(() => toast.error("Could not copy the view link"))
+  }
 
   return (
     <div className="flex h-full flex-col bg-[#0d0d0d]">
@@ -150,145 +243,33 @@ export function MainView() {
             <p className="text-xs text-muted-foreground">{subtitle}</p>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant={activeFilterCount ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-              >
-                <Filter className="size-3.5" />
-                Filter
-                {activeFilterCount > 0 && (
-                  <span className="rounded bg-[#5c68cf] px-1.5 text-[10px] text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Filter issues</DropdownMenuLabel>
-              <FilterSubmenu
-                label="Status"
-                value={filters.status}
-                onValueChange={(value) => setFilter("status", value)}
-                options={[
-                  { value: "all", label: "Any status" },
-                  ...Object.entries(STATUS_META).map(([value, meta]) => ({
-                    value,
-                    label: meta.label,
-                  })),
-                ]}
-              />
-              <FilterSubmenu
-                label="Priority"
-                value={filters.priority}
-                onValueChange={(value) => setFilter("priority", value)}
-                options={[
-                  { value: "all", label: "Any priority" },
-                  ...([0, 1, 2, 3, 4] as Issue["priority"][]).map(
-                    (priority) => ({
-                      value: String(priority),
-                      label: PRIORITY_META[priority].label,
-                    })
-                  ),
-                ]}
-              />
-              <FilterSubmenu
-                label="Assignee"
-                value={filters.assignee}
-                onValueChange={(value) => setFilter("assignee", value)}
-                options={[
-                  { value: "all", label: "Anyone" },
-                  { value: "unassigned", label: "Unassigned" },
-                  ...users.map((user) => ({
-                    value: user.id,
-                    label: user.name,
-                  })),
-                ]}
-              />
-              <FilterSubmenu
-                label="Label"
-                value={filters.label}
-                onValueChange={(value) => setFilter("label", value)}
-                options={[
-                  { value: "all", label: "Any label" },
-                  ...labels.map((label) => ({
-                    value: label.id,
-                    label: label.name,
-                  })),
-                ]}
-              />
-              {activeFilterCount > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => setFilters(EMPTY_FILTERS)}>
-                    <X className="size-3.5" /> Clear all filters
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-              >
-                <SlidersHorizontal className="size-3.5" /> Display
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Row density</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={density}
-                onValueChange={(value) =>
-                  setDensity(value as "comfortable" | "compact")
-                }
-              >
-                <DropdownMenuRadioItem value="comfortable">
-                  Comfortable
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="compact">
-                  Compact
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sort}
-                onValueChange={(value) => setSort(value as SortMode)}
-              >
-                <DropdownMenuRadioItem value="updated">
-                  Recently updated
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="priority">
-                  Priority
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="identifier">
-                  Identifier
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button
-            size="sm"
-            className="h-7 bg-[#5c68cf] text-xs hover:bg-[#4f5bc4]"
-            onClick={() => setAddIssueOpen(true)}
-          >
-            <Plus className="size-3.5" /> New issue
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          className="h-7 bg-[#5c68cf] text-xs hover:bg-[#4f5bc4]"
+          onClick={() => setAddIssueOpen(true)}
+        >
+          <Plus className="size-3.5" /> New issue
+        </Button>
       </header>
+
+      <IssueViewToolbar
+        state={viewState}
+        filterGroups={filterGroups}
+        savedViews={savedViews}
+        resultSummary={`${filtered.length} of ${baseIssues.length} issues`}
+        unavailableCriteria={unavailableCriteria}
+        onStateChange={updateViewState}
+        onApplySavedView={applySavedView}
+        onCreateSavedView={createView}
+        onRenameSavedView={renameView}
+        onDeleteSavedView={deleteView}
+        onCopyLink={copyLink}
+      />
 
       <div
         className={cn(
           "flex-1 overflow-y-auto px-4",
-          density === "compact" ? "py-0 text-[12px]" : "py-2"
+          viewState.density === "compact" ? "py-0 text-[12px]" : "py-2"
         )}
       >
         {isLoading ? (
@@ -310,40 +291,15 @@ export function MainView() {
           <IssueList
             issues={filtered}
             emptyMessage={
-              activeFilterCount
-                ? "No issues match these filters. Clear filters to see everything."
-                : "No issues here."
+              unavailableCriteria.length > 0
+                ? "No issues match this shared view. Remove unavailable criteria to recover."
+                : filtered.length !== baseIssues.length
+                  ? "No issues match these filters. Remove a filter to see more."
+                  : "No issues here."
             }
           />
         )}
       </div>
     </div>
-  )
-}
-
-function FilterSubmenu({
-  label,
-  value,
-  options,
-  onValueChange,
-}: {
-  label: string
-  value: string
-  options: { value: string; label: string }[]
-  onValueChange: (value: string) => void
-}) {
-  return (
-    <DropdownMenuSub>
-      <DropdownMenuSubTrigger>{label}</DropdownMenuSubTrigger>
-      <DropdownMenuSubContent className="w-52">
-        <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
   )
 }

@@ -1,6 +1,6 @@
 # E02-T03 — Saved and shareable views
 
-Status: `pending`
+Status: `done`
 
 ## User outcome
 

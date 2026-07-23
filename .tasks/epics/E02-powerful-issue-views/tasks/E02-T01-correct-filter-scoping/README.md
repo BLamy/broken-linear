@@ -1,6 +1,6 @@
 # E02-T01 — Correct filter scoping
 
-Status: `pending`
+Status: `done`
 
 ## User outcome
 

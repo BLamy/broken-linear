@@ -1,6 +1,6 @@
 # E02-T04 — Replay QA release gate
 
-Status: `pending`
+Status: `in_progress`
 
 ## User outcome
 

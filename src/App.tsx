@@ -9,6 +9,7 @@ import { useUIStore } from "@/store/ui-store"
 
 export function App() {
   const syncViewFromLocation = useUIStore((s) => s.syncViewFromLocation)
+  const view = useUIStore((s) => s.view)
   const setView = useUIStore((s) => s.setView)
   const setSearchQuery = useUIStore((s) => s.setSearchQuery)
   const setAddIssueOpen = useUIStore((s) => s.setAddIssueOpen)
@@ -60,7 +61,7 @@ export function App() {
     <div className="flex h-svh w-full overflow-hidden bg-[#0d0d0d] text-foreground">
       <Sidebar />
       <main className="flex min-w-0 flex-1 flex-col">
-        <MainView />
+        <MainView key={`${session.organization?.id ?? "workspace"}:${view}`} />
       </main>
       <AddIssueDialog />
       <IssueDetailDialog />

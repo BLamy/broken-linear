@@ -1,6 +1,6 @@
 # E02-T02 — Multi-select filters and chips
 
-Status: `pending`
+Status: `done`
 
 ## User outcome
 

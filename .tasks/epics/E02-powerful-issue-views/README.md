@@ -1,6 +1,6 @@
 # E02 — Powerful issue views
 
-Status: `pending`
+Status: `qa`
 
 ## Outcome
 
@@ -12,12 +12,12 @@ Builds on E00's issue list, search, and basic single-value filters.
 
 ## Tasks
 
-| Task                                                        | Outcome                                                    | Status  |
-| ----------------------------------------------------------- | ---------------------------------------------------------- | ------- |
-| [E02-T01](tasks/E02-T01-correct-filter-scoping/README.md)   | Correct, view-aware filter options and empty-value filters | pending |
-| [E02-T02](tasks/E02-T02-multiselect-filter-chips/README.md) | Multi-select filters with visible, removable criteria      | pending |
-| [E02-T03](tasks/E02-T03-saved-shareable-views/README.md)    | Persistent, saved, and shareable issue views               | pending |
-| [E02-T04](tasks/E02-T04-replayqa-release-gate/README.md)    | Authenticated Replay QA release gate                       | pending |
+| Task                                                        | Outcome                                                    | Status      |
+| ----------------------------------------------------------- | ---------------------------------------------------------- | ----------- |
+| [E02-T01](tasks/E02-T01-correct-filter-scoping/README.md)   | Correct, view-aware filter options and empty-value filters | done        |
+| [E02-T02](tasks/E02-T02-multiselect-filter-chips/README.md) | Multi-select filters with visible, removable criteria      | done        |
+| [E02-T03](tasks/E02-T03-saved-shareable-views/README.md)    | Persistent, saved, and shareable issue views               | done        |
+| [E02-T04](tasks/E02-T04-replayqa-release-gate/README.md)    | Authenticated Replay QA release gate                       | in_progress |
 
 ## Release criteria
 
