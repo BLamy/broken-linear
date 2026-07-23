@@ -1,4 +1,12 @@
-import type { Issue, Label, Project, Session, Team, User } from "./types"
+import type {
+  Comment,
+  Issue,
+  Label,
+  Project,
+  Session,
+  Team,
+  User,
+} from "./types"
 
 const BASE = "/api"
 
@@ -58,4 +66,18 @@ export const api = {
     }),
   deleteIssue: (id: string) =>
     http<Issue>(`/issues/${id}`, { method: "DELETE" }),
+  getComments: (issueId: string) =>
+    http<Comment[]>(`/issues/${issueId}/comments`),
+  createComment: (issueId: string, body: string) =>
+    http<Comment>(`/issues/${issueId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    }),
+  updateComment: (id: string, body: string) =>
+    http<Comment>(`/comments/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ body }),
+    }),
+  deleteComment: (id: string) =>
+    http<Comment>(`/comments/${id}`, { method: "DELETE" }),
 }

@@ -52,6 +52,16 @@ export interface Issue {
   url?: string
 }
 
+export interface Comment {
+  id: string
+  issueId: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  author: User | null
+  isOwn: boolean
+}
+
 export interface Session {
   authenticated: boolean
   user: {
@@ -87,13 +97,11 @@ export const STATUS_META: Record<
   canceled: { label: "Canceled", color: "#95a2b3", bg: "#95a2b322" },
 }
 
-export const PRIORITY_META: Record<
-  Priority,
-  { label: string; color: string }
-> = {
-  0: { label: "No priority", color: "#3a3a3c" },
-  1: { label: "Urgent", color: "#eb5757" },
-  2: { label: "High", color: "#f2994a" },
-  3: { label: "Medium", color: "#f2c94c" },
-  4: { label: "Low", color: "#95a2b3" },
-}
+export const PRIORITY_META: Record<Priority, { label: string; color: string }> =
+  {
+    0: { label: "No priority", color: "#3a3a3c" },
+    1: { label: "Urgent", color: "#eb5757" },
+    2: { label: "High", color: "#f2994a" },
+    3: { label: "Medium", color: "#f2c94c" },
+    4: { label: "Low", color: "#95a2b3" },
+  }

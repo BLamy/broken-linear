@@ -1,4 +1,5 @@
 import type {
+  Comment,
   Issue,
   IssueStatus,
   Label,
@@ -53,6 +54,15 @@ type LinearIssue = {
   assignee: LinearUser | null
   labels: { nodes: LinearLabel[] }
   project: LinearProject | null
+}
+
+type LinearComment = {
+  id: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  issue: { id: string }
+  user: LinearUser | null
 }
 
 type LinearTeam = {
@@ -187,6 +197,35 @@ export async function handleLinearRequest(
           )
         : []
       return json({ query, results })
+    }
+
+    const issueCommentsMatch = path.match(/^\/issues\/([^/]+)\/comments$/)
+    if (issueCommentsMatch) {
+      const issueId = decodeURIComponent(issueCommentsMatch[1])
+      if (request.method === "GET") {
+        return json(await fetchLinearComments(session, env, issueId))
+      }
+      if (request.method === "POST") {
+        const input = (await request.json()) as { body?: unknown }
+        return json(
+          await createLinearComment(session, env, issueId, commentBody(input)),
+          201
+        )
+      }
+    }
+
+    const commentMatch = path.match(/^\/comments\/([^/]+)$/)
+    if (commentMatch) {
+      const id = decodeURIComponent(commentMatch[1])
+      if (request.method === "PATCH") {
+        const input = (await request.json()) as { body?: unknown }
+        return json(
+          await updateLinearComment(session, env, id, commentBody(input))
+        )
+      }
+      if (request.method === "DELETE") {
+        return json(await deleteLinearComment(session, env, id))
+      }
     }
 
     const issueMatch = path.match(/^\/issues\/([^/]+)$/)
@@ -524,6 +563,25 @@ fragment IssueFields on Issue {
 }
 `
 
+const COMMENT_FIELDS = `
+fragment CommentFields on Comment {
+  id
+  body
+  createdAt
+  updatedAt
+  issue { id }
+  user {
+    id
+    name
+    displayName
+    email
+    initials
+    avatarUrl
+    avatarBackgroundColor
+  }
+}
+`
+
 async function fetchLinearProfile(
   accessToken: string,
   graphqlUrl: string
@@ -737,6 +795,138 @@ async function getLinearIssue(
   return mapIssue(result.issue)
 }
 
+async function fetchLinearComments(
+  session: Session,
+  env: Env,
+  issueId: string
+): Promise<Comment[]> {
+  const config = getConfig(new Request("http://local.invalid/api/session"), env)
+  const result = await linearGraphql<{
+    issue: { comments: { nodes: LinearComment[] } } | null
+  }>(
+    session.accessToken,
+    config.graphqlUrl,
+    `
+    ${COMMENT_FIELDS}
+    query IssueComments($id: String!) {
+      issue(id: $id) {
+        comments(first: 100) { nodes { ...CommentFields } }
+      }
+    }
+    `,
+    { id: issueId }
+  )
+  if (!result.issue) throw new ApiError("Issue not found", 404)
+  return result.issue.comments.nodes
+    .map((comment) => mapComment(comment, session.user.id))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+}
+
+async function createLinearComment(
+  session: Session,
+  env: Env,
+  issueId: string,
+  body: string
+): Promise<Comment> {
+  const config = getConfig(new Request("http://local.invalid/api/session"), env)
+  const result = await linearGraphql<{
+    commentCreate: { success: boolean; comment: LinearComment | null }
+  }>(
+    session.accessToken,
+    config.graphqlUrl,
+    `
+    ${COMMENT_FIELDS}
+    mutation CreateComment($input: CommentCreateInput!) {
+      commentCreate(input: $input) {
+        success
+        comment { ...CommentFields }
+      }
+    }
+    `,
+    { input: { issueId, body } }
+  )
+  if (!result.commentCreate.comment) {
+    throw new ApiError("Linear did not return the created comment", 502)
+  }
+  return mapComment(result.commentCreate.comment, session.user.id)
+}
+
+async function updateLinearComment(
+  session: Session,
+  env: Env,
+  id: string,
+  body: string
+): Promise<Comment> {
+  const config = getConfig(new Request("http://local.invalid/api/session"), env)
+  const existing = await getLinearComment(session, env, id)
+  if (!existing.isOwn)
+    throw new ApiError("You can only edit your comments", 403)
+  const result = await linearGraphql<{
+    commentUpdate: { success: boolean; comment: LinearComment | null }
+  }>(
+    session.accessToken,
+    config.graphqlUrl,
+    `
+    ${COMMENT_FIELDS}
+    mutation UpdateComment($id: String!, $input: CommentUpdateInput!) {
+      commentUpdate(id: $id, input: $input) {
+        success
+        comment { ...CommentFields }
+      }
+    }
+    `,
+    { id, input: { body } }
+  )
+  if (!result.commentUpdate.comment) {
+    throw new ApiError("Linear did not return the updated comment", 502)
+  }
+  return mapComment(result.commentUpdate.comment, session.user.id)
+}
+
+async function deleteLinearComment(
+  session: Session,
+  env: Env,
+  id: string
+): Promise<Comment> {
+  const config = getConfig(new Request("http://local.invalid/api/session"), env)
+  const existing = await getLinearComment(session, env, id)
+  if (!existing.isOwn) {
+    throw new ApiError("You can only delete your comments", 403)
+  }
+  await linearGraphql(
+    session.accessToken,
+    config.graphqlUrl,
+    `
+    mutation DeleteComment($id: String!) {
+      commentDelete(id: $id) { success }
+    }
+    `,
+    { id }
+  )
+  return existing
+}
+
+async function getLinearComment(
+  session: Session,
+  env: Env,
+  id: string
+): Promise<Comment> {
+  const config = getConfig(new Request("http://local.invalid/api/session"), env)
+  const result = await linearGraphql<{ comment: LinearComment | null }>(
+    session.accessToken,
+    config.graphqlUrl,
+    `
+    ${COMMENT_FIELDS}
+    query Comment($id: String!) {
+      comment(id: $id) { ...CommentFields }
+    }
+    `,
+    { id }
+  )
+  if (!result.comment) throw new ApiError("Comment not found", 404)
+  return mapComment(result.comment, session.user.id)
+}
+
 async function linearGraphql<T>(
   accessToken: string,
   graphqlUrl: string,
@@ -808,6 +998,29 @@ function mapIssue(issue: LinearIssue): Issue {
     updatedAt: issue.updatedAt,
     url: issue.url,
   }
+}
+
+function mapComment(comment: LinearComment, viewerId: string): Comment {
+  return {
+    id: comment.id,
+    issueId: comment.issue.id,
+    body: comment.body,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
+    author: comment.user ? mapUser(comment.user) : null,
+    isOwn: comment.user?.id === viewerId,
+  }
+}
+
+function commentBody(input: { body?: unknown }): string {
+  if (typeof input.body !== "string" || !input.body.trim()) {
+    throw new ApiError("Comment body is required", 400)
+  }
+  const body = input.body.trim()
+  if (body.length > 10_000) {
+    throw new ApiError("Comment body must be 10,000 characters or fewer", 400)
+  }
+  return body
 }
 
 function statusForState(state: LinearState): IssueStatus {
