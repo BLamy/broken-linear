@@ -127,12 +127,14 @@ export function AddIssueDialog() {
               }
             }}
             placeholder="Issue title"
+            aria-label="Issue title"
             className="w-full bg-transparent text-lg font-medium outline-none placeholder:text-muted-foreground"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add description…"
+            aria-label="Issue description"
             rows={3}
             className="mt-2 w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
