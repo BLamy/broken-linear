@@ -33,3 +33,9 @@ Result: `blocked`
 Connect `BLamy/broken-linear` to the canonical project in Replay QA settings,
 then create the E02 version and run the focused end-of-epic journeys in that
 same project.
+
+## Publication
+
+- Draft pull request: <https://github.com/BLamy/broken-linear/pull/5>
+- The PR remains draft and unmerged until the canonical-project Replay gate is
+  green.
